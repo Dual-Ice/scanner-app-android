@@ -27,15 +27,17 @@
         </activity>
 
         <!-- Экраны приемки, отбора и контроля -->
-        <activity android:name=".ReceivingActivity" />
-        <activity android:name=".SelectionActivity" />
-        <activity android:name=".CheckingActivity" />
+<!--        <activity android:name=".ReceivingActivity" />-->
+<!--        <activity android:name=".SelectionActivity" />-->
+<!--        <activity android:name=".CheckingActivity" />-->
 
         <!-- Экран выбора файла XLSX -->
-        <activity android:name=".FileSelectionActivity" />
+<!--        <activity android:name=".FileSelectionActivity" />-->
 
         <!-- Экран отображения отсканированных товаров -->
         <activity android:name=".ScannedItemsActivity" />
+        <activity android:name=".ScannerActivity" />
+        <activity android:name=".ScannedBarcodeActivity" />
 
     </application>
 

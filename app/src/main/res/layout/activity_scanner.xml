@@ -14,18 +14,4 @@
         android:gravity="center"
         android:padding="16dp"/>
 
-    <Button
-        android:id="@+id/startScanButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Начать сканирование"
-        android:onClick="startScan"/>
-
-    <Button
-        android:id="@+id/stopScanButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Остановить сканирование"
-        android:onClick="stopScan"/>
-
 </LinearLayout>
