@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.example.m3zebrascan.Inventory.InventoryItemsActivity
 import com.opencsv.CSVReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -35,6 +36,12 @@ class StartActivity : AppCompatActivity() {
 
     fun openChecking(view: View) {
         // Добавьте код для открытия экрана контроля
+    fun openInventory(view: View) {
+        actionType = Actions.ACTION_TYPE_INVENTORY
+        val intent = Intent(this, InventoryItemsActivity::class.java)
+        intent.putExtra("actionType", actionType)
+        startActivity(intent)
+    }
     }
 
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
