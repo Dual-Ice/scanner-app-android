@@ -28,9 +28,9 @@
 
 
         <activity android:name=".ScannedItemsActivity" />
-        <activity android:name=".ScannedControlItemsActivity" />
-        <activity android:name=".TestActivity" />
-        <activity android:name=".ScannedControlBarcodeActivity" />
+        <activity android:name=".control.ScannedControlItemsActivity" />
+        <activity android:name=".ScannedBarcodeActivity" />
+        <activity android:name=".control.ScannedControlBarcodeActivity" />
         <activity android:name=".Inventory.InventoryItemsActivity"/>
     </application>
 

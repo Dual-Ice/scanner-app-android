@@ -1,5 +1,7 @@
 package com.example.m3zebrascan
 
+import android.graphics.Color
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,6 +30,12 @@ class ItemsAdapter(private val items: List<Item>) :
         holder.codeTextView.text = item.code
         holder.quantityTextView.text = item.quantity.toString()
         holder.scannedTextView.text = item.scanned.toString()
+
+        if (item.scanned == item.quantity) {
+            holder.itemView.setBackgroundColor(Color.GREEN)
+        } else {
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+        }
     }
 
     override fun getItemCount() = items.size
