@@ -10,8 +10,8 @@ object DialogUtils {
             .setPositiveButton("OK") { dialog, _ ->
                 dialog.dismiss()
             }
-        val dialog = builder.create()
-        dialog.show()
+            .create()
+            .show()
     }
 
     fun showSuccessDialog(context: Context, message: String) {
@@ -20,5 +20,22 @@ object DialogUtils {
 
     fun showErrorDialog(context: Context, message: String) {
         showDialog(context, "Ошибка", message)
+    }
+
+    fun showHasScannedItemsCancelDialog(
+        context: Context,
+        onPositiveClick: () -> Unit
+    ) {
+        val builder = android.app.AlertDialog.Builder(context)
+        builder.setTitle("Предупреждение")
+            .setMessage("Документ не будет сохранен, продолжить ?")
+            .setPositiveButton("Да") { _, _ ->
+                onPositiveClick()
+            }
+            .setNegativeButton("Нет") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 }

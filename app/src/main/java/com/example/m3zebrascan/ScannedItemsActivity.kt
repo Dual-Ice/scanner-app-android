@@ -359,16 +359,11 @@ class ScannedItemsActivity : AppCompatActivity() {
     }
 
     private fun showHasScannedItemsCancelDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Предупреждение")
-            .setMessage("Документ не будет сохранен, продолжить ?")
-            .setPositiveButton("Да") { _, _ ->
+        DialogUtils.showHasScannedItemsCancelDialog(
+            context = this,
+            onPositiveClick = {
                 finish()
             }
-            .setNegativeButton("Нет") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .create()
-            .show()
+        )
     }
 }

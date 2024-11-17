@@ -170,12 +170,6 @@ class ScannedControlItemsActivity : AppCompatActivity() {
             val intent = Intent(this, ScannedControlBarcodeActivity::class.java)
             intent.putExtra("scannedItem", foundItem)
 
-//            mManager?.removeListener(mListener)
-//            mListener = null
-//            mManager?.dismiss()
-//            mManager = null
-//            startActivityForResult(intent, REQUEST_QUANTITY)
-
             startQuantityActivity(foundItem)
             return
         }
@@ -395,18 +389,11 @@ class ScannedControlItemsActivity : AppCompatActivity() {
     }
 
     private fun showHasScannedItemsCancelDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Предупреждение")
-            .setMessage("Документ не будет сохранен, продолжить ?")
-            .setPositiveButton("Да") { _, _ ->
-                // Сохраняем данные со всеми товарами
+        DialogUtils.showHasScannedItemsCancelDialog(
+            context = this,
+            onPositiveClick = {
                 finish()
             }
-            .setNegativeButton("Нет") { dialog, _ ->
-                // Закрываем диалог и остаемся на текущем экране
-                dialog.dismiss()
-            }
-            .create()
-            .show()
+        )
     }
 }

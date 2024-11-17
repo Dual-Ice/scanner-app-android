@@ -54,11 +54,10 @@ class ScannedBarcodeActivity : AppCompatActivity() {
             }
         })
 
-        // Обработка нажатия кнопки "Отмена"
         binding.cancelButton.setOnClickListener {
             goBack()
         }
-        // Обработка нажатия кнопки "OK"
+
         binding.okButton.setOnClickListener {
             if (scannedQuantity != null) {
                 scannedItem?.let {
@@ -89,11 +88,17 @@ class ScannedBarcodeActivity : AppCompatActivity() {
         mListener = object : BarcodeListener {
             override fun onBarcode(strBarcode: String?) {
                 if (strBarcode == null) {
-                    DialogUtils.showErrorDialog(this@ScannedBarcodeActivity, "Некорректный штрихкод, повторите сканирование.")
+                    DialogUtils.showErrorDialog(
+                        this@ScannedBarcodeActivity,
+                        "Некорректный штрихкод, повторите сканирование."
+                    )
                     return
                 }
                 if (strBarcode != scannedItem.code) {
-                    DialogUtils.showErrorDialog(this@ScannedBarcodeActivity, "Отсканирован штрихкод не совпадающий с обрабатываемым товаром.")
+                    DialogUtils.showErrorDialog(
+                        this@ScannedBarcodeActivity,
+                        "Отсканирован штрихкод не совпадающий с обрабатываемым товаром."
+                    )
                     return
                 }
 
