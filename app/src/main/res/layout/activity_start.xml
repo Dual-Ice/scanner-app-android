@@ -11,6 +11,8 @@
         android:layout_height="wrap_content"
         android:text="Приемка"
         android:onClick="openReceiving"
+        android:width="200dp"
+        android:height="60dp"
         android:layout_marginBottom="16dp"/>
 
     <Button
@@ -19,6 +21,8 @@
         android:layout_height="wrap_content"
         android:text="Отбор"
         android:onClick="openPicking"
+        android:width="200dp"
+        android:height="60dp"
         android:layout_marginBottom="16dp"/>
 
     <Button
@@ -26,6 +30,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Контроль"
-        android:onClick="openChecking"/>
+        android:width="200dp"
+        android:height="60dp"
+        android:onClick="openChecking"
+        android:layout_marginBottom="50dp"/>
+
+    <Button
+        android:id="@+id/inventaryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:width="200dp"
+        android:height="60dp"
+        android:onClick="openInventory"
+        android:text="Инвентаризация" />
 
 </LinearLayout>
