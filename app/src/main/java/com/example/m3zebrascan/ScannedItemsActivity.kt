@@ -1,31 +1,43 @@
 package com.example.m3zebrascan
 
-import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.m3zebrascan.databinding.ActivityScannedItemsBinding
+import com.m3.sdk.scannerlib.Barcode
+import com.m3.sdk.scannerlib.BarcodeListener
+import com.m3.sdk.scannerlib.BarcodeManager
 import com.opencsv.CSVWriter
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.apache.poi.ss.usermodel.CellStyle
+import org.apache.poi.ss.usermodel.IndexedColors
+import org.apache.poi.ss.usermodel.Row
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import java.io.*
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ScannedItemsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityScannedItemsBinding
     private lateinit var itemsAdapter: ItemsAdapter
-    private lateinit var items: List<Item>
+    private var items: List<Item> = listOf()
     private lateinit var scannedCode: String
+    private lateinit var mBarcode: Barcode
+    private var mManager: BarcodeManager? = null
+    private var mListener: BarcodeListener? = null
+
+    private var actionType: String? = null
+
+    private val CREATE_XLSX_FILE = 1
     private val REQUEST_WRITE_STORAGE = 112
 
     companion object {
-        private const val REQUEST_CODE_SCAN = 1001
         private const val REQUEST_QUANTITY = 1002
     }
 
@@ -35,60 +47,140 @@ class ScannedItemsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // Получение переданных данных
-        items = intent.getParcelableArrayListExtra<Item>("itemsList") ?: listOf()
-
+        items = ItemsHolder.itemsList
+        actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
         itemsAdapter = ItemsAdapter(items)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = itemsAdapter
 
-        // Обработка кнопок
-        binding.scanButton.setOnClickListener {
-            // Логика для сканирования
-            startActivityForResult(Intent(this, ScannerActivity::class.java), REQUEST_CODE_SCAN)
-        }
 
         binding.cancelButton.setOnClickListener {
             // Логика для отмены
-            finish()
+            if (!hasScannedItems()) {
+                finish()
+            }
+
+            showHasScannedItemsCancelDialog()
         }
 
         binding.saveButton.setOnClickListener {
             checkStoragePermissions()
         }
+        initializeScanner()
+
+        // Включаем кнопку "Назад" в ActionBar
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = Actions.getActionName(actionType)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        destroyScanner()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            REQUEST_CODE_SCAN -> {
-                handleScanResult(resultCode, data)
-            }
             REQUEST_QUANTITY -> {
                 handleQuantityResult(resultCode, data)
+            }
+            CREATE_XLSX_FILE -> {
+                if (resultCode == RESULT_OK && data != null) {
+                    val uri = data.data
+                    if (uri != null) {
+//                        saveItemsToCsv(uri)
+                        saveItemsToXlsx(uri)
+                    } else {
+                        DialogUtils.showErrorDialog(this, "Не удалось создать файл.")
+                    }
+                }
             }
         }
     }
 
-    private fun handleScanResult(resultCode: Int, data: Intent?) {
-        if (resultCode == RESULT_OK) {
-            val scannedBarcode = data?.getStringExtra("scannedBarcode")
-            // Проверка наличия отсканированного штрихкода в списке items
-            val foundItem = items.find { it.code == scannedBarcode }
-            if (foundItem != null) {
-                scannedCode = foundItem.code
-                // Переход на экран с отображением отсканированного штрихкода
-                val intent = Intent(this, ScannedBarcodeActivity::class.java)
-                intent.putExtra("scannedItem", foundItem)
-                startActivityForResult(intent, REQUEST_QUANTITY)
-            } else {
-                // Отображение сообщения об ошибке
-                showErrorDialog("Товар с штрихкодом $scannedBarcode не найден.")
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                onBackPressed()
+                true
             }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onBackPressed() {
+        if (hasScannedItems()) {
+            showHasScannedItemsCancelDialog()
+            return
+        }
+
+        super.onBackPressed()
+    }
+
+    private fun initializeScanner() {
+        // Инициализация сканера
+        mBarcode = Barcode(this)
+        mManager = BarcodeManager(this)
+        mBarcode.setScanner(true) // Включаем сканер
+
+        // Создание слушателя для сканера
+        makeListener()
+    }
+
+    private fun makeListener() {
+        // Создание слушателя для сканера
+        mListener = object : BarcodeListener {
+            override fun onBarcode(strBarcode: String?) {
+                if (strBarcode != null) {
+                    handleScanResult(strBarcode)
+                }
+            }
+
+            override fun onBarcode(p0: String?, p1: String?) {}
+            override fun onGetSymbology(p0: Int, p1: Int) {}
+        }
+
+        // Регистрация слушателя
+        mManager?.addListener(mListener)
+    }
+
+    private fun destroyScanner() {
+        mManager?.removeListener(mListener)
+        mBarcode.setScanner(false)
+        mManager?.dismiss()
+    }
+
+    private fun handleScanResult(scannedBarcode: String) {
+        // Проверка наличия отсканированного штрихкода в списке items
+        val foundItem = items.find { it.code == scannedBarcode }
+        if (foundItem == null) {
+            // Отображение сообщения об ошибке
+            DialogUtils.showErrorDialog(this, "Товар с штрихкодом $scannedBarcode не найден.")
+            return
+        }
+
+        scannedCode = foundItem.code
+        if (foundItem.scanned == 0) {
+            startQuantityActivity(foundItem)
+            return
+        }
+        if (foundItem.scanned != foundItem.quantity) {
+            // Показываем сообщение с двумя кнопками
+            showQuantityMismatchDialog(foundItem)
+            return
+        }
+
+        if (foundItem.scanned == foundItem.quantity) {
+            // Показываем сообщение с двумя кнопками
+            showQuantityEqualDialog(foundItem)
+            return
         }
     }
 
     private fun handleQuantityResult(resultCode: Int, data: Intent?) {
+        mManager = BarcodeManager(this)
+        makeListener()
         if (resultCode == RESULT_OK) {
             val quantity = data?.getIntExtra("quantity", 0)
             // Выводим полученное количество в консоль
@@ -96,7 +188,6 @@ class ScannedItemsActivity : AppCompatActivity() {
             if (foundItem != null && quantity != null) {
                 // Обновляем количество товара в элементе списка
                 foundItem.scanned = quantity
-                println("Получено количество: $quantity")
 
                 // Найдите индекс элемента и уведомьте адаптер об изменении
                 val index = getItemIndex(foundItem)
@@ -108,15 +199,15 @@ class ScannedItemsActivity : AppCompatActivity() {
         }
     }
 
-    private fun showErrorDialog(message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Сообщение")
-            .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-        val dialog = builder.create()
-        dialog.show()
+    private fun startQuantityActivity(item: Item) {
+        mManager?.removeListener(mListener)
+        mListener = null
+        mManager?.dismiss()
+        mManager = null
+
+        val intent = Intent(this, ScannedBarcodeActivity::class.java)
+        intent.putExtra("scannedItem", item)
+        startActivityForResult(intent, REQUEST_QUANTITY)
     }
 
     private fun getItemIndex(item: Item): Int {
@@ -124,17 +215,13 @@ class ScannedItemsActivity : AppCompatActivity() {
     }
 
     private fun checkStoragePermissions() {
-//        val permission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-//
-//        if (permission != PackageManager.PERMISSION_GRANTED) {
-//            ActivityCompat.requestPermissions(
-//                this,
-//                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-//                REQUEST_WRITE_STORAGE
-//            )
-//        } else {
-            saveItemsToCsv()  // Добавьте этот вызов
-//        }
+        val itemsNotFullyScanned = items.any { it.scanned <= 0 }
+
+        if (itemsNotFullyScanned) {
+            showIncompleteScanDialog()
+        } else {
+            createXlsxFile()
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -142,51 +229,154 @@ class ScannedItemsActivity : AppCompatActivity() {
         if (requestCode == REQUEST_WRITE_STORAGE) {
             Log.d("PermissionResult", "Write external storage permission result: ${grantResults[0]}")
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                saveItemsToCsv()
+                createXlsxFile()
             } else {
-                showErrorDialog("Permission denied to write to external storage.")
+                DialogUtils.showErrorDialog(this, "Permission denied to write to external storage.")
             }
         }
     }
 
-    private fun saveItemsToCsv() {
+    private fun hasScannedItems(): Boolean {
+        return items.any { it.scanned > 0 }
+    }
+
+    private fun saveItemsToCsv(uri: Uri) {
         try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            downloadsDir.mkdirs() // Создаем каталог, если он не существует
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                val csvWriter = CSVWriter(OutputStreamWriter(outputStream))
 
-            val csvFile = File(downloadsDir, "scanned_items.csv")
-            csvFile.createNewFile()
+                // Записать заголовки
+                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
+                csvWriter.writeNext(header)
 
-            val csvWriter = CSVWriter(FileWriter(csvFile))
+                // Записать данные
+                for (item in items) {
+                    val data = arrayOf(item.name, item.code, item.quantity.toString(), item.scanned.toString())
+                    csvWriter.writeNext(data)
+                }
 
-            // Записать заголовки
-            val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
-            csvWriter.writeNext(header)
+                csvWriter.close()
 
-            // Записать данные
-            for (item in items) {
-                val data = arrayOf(item.name, item.code, item.quantity.toString(), item.scanned.toString())
-                csvWriter.writeNext(data)
+                DialogUtils.showSuccessDialog(this, "Данные успешно сохранены")
             }
-
-            csvWriter.close()
-
-            showSuccessDialog("Данные успешно сохранены в ${csvFile.absolutePath}")
-
         } catch (e: IOException) {
-            showErrorDialog("Ошибка при сохранении файла: ${e.message}")
+            DialogUtils.showErrorDialog(this, "Ошибка при сохранении файла: ${e.message}")
         }
     }
 
-    private fun showSuccessDialog(message: String) {
+    private fun saveItemsToXlsx(uri: Uri) {
+        try {
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                val workbook = XSSFWorkbook() // Создаем новый XLSX файл
+                val sheet = workbook.createSheet("Лист 1") // Создаем лист с именем "Items"
+
+                // Создаем стиль для заголовков
+                val headerCellStyle = workbook.createCellStyle().apply {
+                    fillForegroundColor = IndexedColors.GREY_25_PERCENT.index
+                    fillPattern = CellStyle.SOLID_FOREGROUND
+                }
+
+                // Создаем строку заголовков
+                val headerRow = sheet.createRow(0)
+                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
+
+                headers.forEachIndexed { index, header ->
+                    val cell = headerRow.createCell(index)
+                    cell.setCellValue(header)
+                    cell.cellStyle = headerCellStyle
+                }
+
+                // Заполняем данные
+                items.forEachIndexed { index, item ->
+                    val row: Row = sheet.createRow(index + 1)
+                    row.createCell(0).setCellValue(item.name)
+                    row.createCell(1).setCellValue(item.code)
+                    row.createCell(2).setCellValue(item.quantity.toDouble())
+                    row.createCell(3).setCellValue(item.scanned.toDouble())
+                }
+
+                // Сохраняем workbook в OutputStream
+                workbook.write(outputStream)
+                workbook.close() // Закрываем workbook для освобождения ресурсов
+
+                DialogUtils.showSuccessDialog(this, "Данные успешно сохранены")
+            }
+        } catch (e: IOException) {
+            DialogUtils.showErrorDialog(this, "Ошибка при сохранении файла: ${e.message}")
+        }
+    }
+
+    private fun createXlsxFile() {
+        val fileTitle =  "${Actions.getActionName(actionType)}-${getCurrentDate()}.xlsx"
+
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            putExtra(Intent.EXTRA_TITLE, fileTitle)
+        }
+        startActivityForResult(intent, CREATE_XLSX_FILE)
+    }
+
+    private fun getCurrentDate(): String {
+        val dateFormat = SimpleDateFormat("dd-MM-yyyy_HH-mm-ss", Locale.getDefault())
+        return dateFormat.format(Date())
+    }
+
+    private fun showQuantityMismatchDialog(item: Item) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("Успех")
-            .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ ->
+        builder.setTitle("Несоответствие количества")
+            .setMessage("Отсканировано ${item.scanned}, требуется отсканировать ${item.quantity}")
+            .setPositiveButton("Принять") { dialog, _ ->
+                startQuantityActivity(item)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Отмена") { dialog, _ ->
                 dialog.dismiss()
             }
         val dialog = builder.create()
         dialog.show()
     }
 
+    private fun showQuantityEqualDialog(item: Item) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Предупреждение")
+            .setMessage("Отсканировано ${item.scanned} из ${item.quantity}, изменить количество?")
+            .setPositiveButton("Да") { dialog, _ ->
+                startQuantityActivity(item)
+                dialog.dismiss()
+            }
+            .setNegativeButton("Нет") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
+
+    private fun showIncompleteScanDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Предупреждение")
+            .setMessage("Отсканирован не весь товар")
+            .setPositiveButton("Сохранить") { _, _ ->
+                createXlsxFile()
+            }
+            .setNegativeButton("Продолжить сканирование") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
+
+    private fun showHasScannedItemsCancelDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Предупреждение")
+            .setMessage("Документ не будет сохранен, продолжить ?")
+            .setPositiveButton("Да") { _, _ ->
+                finish()
+            }
+            .setNegativeButton("Нет") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+    }
 }
