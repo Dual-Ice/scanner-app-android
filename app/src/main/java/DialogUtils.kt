@@ -37,5 +37,23 @@ object DialogUtils {
             }
             .create()
             .show()
+
+    }
+
+    fun showQuantityMismatchDialog(
+        context: Context,
+        onPositiveClick: () -> Unit
+    ) {
+        val builder = AlertDialog.Builder(context)
+        builder.setTitle("Предупреждение")
+            .setMessage("Количество не совпадает, продолжить?")
+            .setPositiveButton("Да") { dialog, _ ->
+                onPositiveClick()
+            }
+            .setNegativeButton("Нет") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 }
