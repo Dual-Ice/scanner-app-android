@@ -1,5 +1,6 @@
 package com.example.m3zebrascan.Inventory
 
+import DocumentSaver
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -17,10 +18,6 @@ import com.example.m3zebrascan.databinding.ActivityInventoryItemsBinding
 import com.m3.sdk.scannerlib.Barcode
 import com.m3.sdk.scannerlib.BarcodeListener
 import com.m3.sdk.scannerlib.BarcodeManager
-import org.apache.poi.ss.usermodel.CellStyle
-import org.apache.poi.ss.usermodel.IndexedColors
-import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.IOException
 
 class InventoryItemsActivity: AppCompatActivity() {
@@ -41,8 +38,6 @@ class InventoryItemsActivity: AppCompatActivity() {
         binding = ActivityInventoryItemsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
-        // Получение переданных данных
         actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
         itemsAdapter = InventoryItemsAdapter(items)
@@ -215,43 +210,15 @@ class InventoryItemsActivity: AppCompatActivity() {
     }
 
     private fun saveItemsToXlsx(uri: Uri) {
+        val documentSaver = DocumentSaver(this)
+        documentSaver.saveInventory(uri, items.toList())
         try {
-            contentResolver.openOutputStream(uri)?.use { outputStream ->
-                val workbook = XSSFWorkbook() // Создаем новый XLSX файл
-                val sheet = workbook.createSheet("Лист 1") // Создаем лист с именем "Items"
-
-                // Создаем стиль для заголовков
-                val headerCellStyle = workbook.createCellStyle().apply {
-                    fillForegroundColor = IndexedColors.GREY_25_PERCENT.index
-                    fillPattern = CellStyle.SOLID_FOREGROUND
-                }
-
-                // Создаем строку заголовков
-                val headerRow = sheet.createRow(0)
-                val headers = listOf("Штрих-код", "Количество")
-
-                headers.forEachIndexed { index, header ->
-                    val cell = headerRow.createCell(index)
-                    cell.setCellValue(header)
-                    cell.cellStyle = headerCellStyle
-                }
-
-                // Заполняем данные
-                items.forEachIndexed { index, item ->
-                    val row: Row = sheet.createRow(index + 1)
-                    row.createCell(1).setCellValue(item.code)
-                    row.createCell(2).setCellValue(item.quantity.toDouble())
-                }
-
-                // Сохраняем workbook в OutputStream
-                workbook.write(outputStream)
-                workbook.close() // Закрываем workbook для освобождения ресурсов
-
-                DialogUtils.showSuccessDialog(this, "Данные успешно сохранены")
-            }
-        } catch (e: IOException) {
+            documentSaver.saveInventory(uri, items) // Исключение из saveItemsToXlsx "поднимется" сюда
+            DialogUtils.showSuccessDialog(this, "Данные успешно сохранены")
+        } catch(e: IOException) {
             DialogUtils.showErrorDialog(this, "Ошибка при сохранении файла: ${e.message}")
         }
+
     }
 
     private fun createXlsxFile() {
@@ -265,22 +232,13 @@ class InventoryItemsActivity: AppCompatActivity() {
         startActivityForResult(intent, CREATE_XLSX_FILE)
     }
 
-
-
     private fun showHasScannedItemsCancelDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Предупреждение")
-            .setMessage("Документ не будет сохранен, продолжить ?")
-            .setPositiveButton("Да") { _, _ ->
-                // Сохраняем данные со всеми товарами
+        DialogUtils.showHasScannedItemsCancelDialog(
+            context = this,
+            onPositiveClick = {
                 finish()
             }
-            .setNegativeButton("Нет") { dialog, _ ->
-                // Закрываем диалог и остаемся на текущем экране
-                dialog.dismiss()
-            }
-            .create()
-            .show()
+        )
     }
 
 }
