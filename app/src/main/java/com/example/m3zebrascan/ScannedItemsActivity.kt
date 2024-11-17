@@ -19,9 +19,6 @@ import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class ScannedItemsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityScannedItemsBinding
@@ -307,7 +304,7 @@ class ScannedItemsActivity : AppCompatActivity() {
     }
 
     private fun createXlsxFile() {
-        val fileTitle =  "${Actions.getActionName(actionType)}-${getCurrentDate()}.xlsx"
+        val fileTitle =  "${Actions.getActionName(actionType)}-${DateUtils.getCurrentDate()}.xlsx"
 
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -315,11 +312,6 @@ class ScannedItemsActivity : AppCompatActivity() {
             putExtra(Intent.EXTRA_TITLE, fileTitle)
         }
         startActivityForResult(intent, CREATE_XLSX_FILE)
-    }
-
-    private fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("dd-MM-yyyy_HH-mm-ss", Locale.getDefault())
-        return dateFormat.format(Date())
     }
 
     private fun showQuantityMismatchDialog(item: Item) {

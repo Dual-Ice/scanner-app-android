@@ -22,8 +22,6 @@ import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
 
 class InventoryItemsActivity: AppCompatActivity() {
     private lateinit var binding: ActivityInventoryItemsBinding
@@ -85,7 +83,7 @@ class InventoryItemsActivity: AppCompatActivity() {
                     if (uri != null) {
                         saveItemsToXlsx(uri)
                     } else {
-                        showErrorDialog("Не удалось создать файл.")
+                        DialogUtils.showErrorDialog(this, "Не удалось создать файл.")
                     }
                 }
             }
@@ -207,7 +205,7 @@ class InventoryItemsActivity: AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 createXlsxFile()
             } else {
-                showErrorDialog("Permission denied to write to external storage.")
+                DialogUtils.showErrorDialog(this, "Permission denied to write to external storage.")
             }
         }
     }
@@ -249,15 +247,15 @@ class InventoryItemsActivity: AppCompatActivity() {
                 workbook.write(outputStream)
                 workbook.close() // Закрываем workbook для освобождения ресурсов
 
-                showSuccessDialog("Данные успешно сохранены")
+                DialogUtils.showSuccessDialog(this, "Данные успешно сохранены")
             }
         } catch (e: IOException) {
-            showErrorDialog("Ошибка при сохранении файла: ${e.message}")
+            DialogUtils.showErrorDialog(this, "Ошибка при сохранении файла: ${e.message}")
         }
     }
 
     private fun createXlsxFile() {
-        val fileTitle =  "${Actions.getActionName(actionType)}-${getCurrentDate()}.xlsx"
+        val fileTitle =  "${Actions.getActionName(actionType)}-${DateUtils.getCurrentDate()}.xlsx"
 
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -267,32 +265,7 @@ class InventoryItemsActivity: AppCompatActivity() {
         startActivityForResult(intent, CREATE_XLSX_FILE)
     }
 
-    private fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("dd-MM-yyyy_HH-mm-ss", Locale.getDefault())
-        return dateFormat.format(Date())
-    }
 
-    private fun showSuccessDialog(message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Успех")
-            .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-    private fun showErrorDialog(message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Сообщение")
-            .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-        val dialog = builder.create()
-        dialog.show()
-    }
 
     private fun showHasScannedItemsCancelDialog() {
         val builder = AlertDialog.Builder(this)
