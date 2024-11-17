@@ -6,7 +6,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.MenuItem
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.m3zebrascan.Item
 import com.example.m3zebrascan.databinding.ActivityScannedBarcodeControlBinding
@@ -23,8 +22,8 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Включаем кнопку "Назад" в ActionBar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Работа с товаром"
 
         binding = ActivityScannedBarcodeControlBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -33,7 +32,6 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
         binding.okButton.isEnabled = false
         binding.cancelButton.isEnabled = false
 
-        // Установка текста для элементов
         binding.productNameTextView.text = scannedItem.name
         binding.barcodeTextView.text = scannedItem.code
         binding.quantityTextView.text = scannedItem.quantity.toString()
@@ -45,36 +43,43 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
             }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                // Преобразуем введенное значение в Int и обновляем переменную
                 val input = s.toString()
-                scannedQuantity = input.toIntOrNull() ?: 0 // Если нечисловое значение, присваиваем 0
+                scannedQuantity = input.toIntOrNull() ?: 0
             }
 
             override fun afterTextChanged(s: Editable?) {
             }
         })
-        // Обработка нажатия кнопки "Отмена"
+
         binding.cancelButton.setOnClickListener {
             goBack()
         }
-        // Обработка нажатия кнопки "OK"
+
         binding.okButton.setOnClickListener {
-            if (scannedQuantity != null) {
-                scannedItem?.let {
-                    if (scannedQuantity != it.quantity) {
-                        // Показать диалог подтверждения
-                        showQuantityMismatchDialog(scannedQuantity)
-                    } else {
-                        // Если количество совпадает, вернуть результат и закрыть экран
+            if (scannedQuantity == null) {
+                binding.quantityEditText.error = "Введите корректное количество"
+                return@setOnClickListener
+            }
+
+            scannedItem.let {
+                if (scannedQuantity == it.quantity) {
+                    setResult(RESULT_OK, Intent().apply {
+                        putExtra("quantity", scannedQuantity)
+                    })
+                    finish()
+                }
+
+                DialogUtils.showQuantityMismatchDialog(
+                    context = this,
+                    onPositiveClick = {
                         setResult(RESULT_OK, Intent().apply {
                             putExtra("quantity", scannedQuantity)
                         })
                         finish()
                     }
-                }
-            } else {
-                binding.quantityEditText.error = "Введите корректное количество"
+                )
             }
+
         }
 
         binding.unlock.setOnCheckedChangeListener { _, isChecked ->
@@ -84,15 +89,20 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
 
         mManager = BarcodeManager(this)
 
-        // Создание слушателя для сканера
         mListener = object : BarcodeListener {
             override fun onBarcode(strBarcode: String?) {
                 if (strBarcode == null) {
-                    DialogUtils.showErrorDialog(this@ScannedControlBarcodeActivity, "Некорректный штрихкод, повторите сканирование.")
+                    DialogUtils.showErrorDialog(
+                        this@ScannedControlBarcodeActivity,
+                        "Некорректный штрихкод, повторите сканирование."
+                    )
                     return
                 }
                 if (strBarcode != scannedItem.code) {
-                    DialogUtils.showErrorDialog(this@ScannedControlBarcodeActivity, "Отсканирован штрихкод не совпадающий с обрабатываемым товаром.")
+                    DialogUtils.showErrorDialog(
+                        this@ScannedControlBarcodeActivity,
+                        "Отсканирован штрихкод не совпадающий с обрабатываемым товаром."
+                    )
                     return
                 }
 
@@ -105,7 +115,6 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
             override fun onGetSymbology(p0: Int, p1: Int) {}
         }
 
-        // Регистрация слушателя
         mManager.addListener(mListener)
     }
 
@@ -113,9 +122,7 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
         event?.let {
             val keyCode = it.keyCode
             if (event.action == KeyEvent.ACTION_DOWN) {
-                // Фильтруем события от физической кнопки сканера (предположительно keyCode == 50)
                 if (keyCode == 50) {
-                    // Возвращаем true, чтобы событие не передавалось дальше и не триггерило onClick
                     return true
                 }
             }
@@ -132,7 +139,7 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                onBackPressed() // Обработка нажатия кнопки "Назад"
+                onBackPressed()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -146,25 +153,5 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
     private fun goBack() {
         setResult(RESULT_CANCELED)
         finish()
-    }
-
-    private fun showQuantityMismatchDialog(quantity: Int) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Предупреждение")
-            .setMessage("Количество не совпадает, продолжить?")
-            .setPositiveButton("Да") { dialog, _ ->
-                // Закрыть экран и вернуть введенное количество
-                setResult(RESULT_OK, Intent().apply {
-                    putExtra("quantity", quantity)
-                })
-                dialog.dismiss()
-                finish()
-            }
-            .setNegativeButton("Нет") { dialog, _ ->
-                // Закрыть диалог и оставить пользователя на текущем экране
-                dialog.dismiss()
-            }
-        val dialog = builder.create()
-        dialog.show()
     }
 }

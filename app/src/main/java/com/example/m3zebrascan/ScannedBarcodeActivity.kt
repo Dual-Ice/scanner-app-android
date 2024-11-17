@@ -6,7 +6,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.MenuItem
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.m3zebrascan.databinding.ActivityScannedBarcodeBinding
 import com.m3.sdk.scannerlib.BarcodeListener

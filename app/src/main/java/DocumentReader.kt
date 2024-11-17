@@ -49,7 +49,7 @@ class DocumentReader {
         val workbook = XSSFWorkbook(inputStream)
         val sheet = workbook.getSheetAt(0) // Получаем первый лист
         val dataFormatter = DataFormatter() // Создаем экземпляр DataFormatter
-        Log.d("ExcelSheetInfo",sheet.lastRowNum.toString())
+
         for (row in sheet) {
             // Пропускаем первую строку с заголовками
             if (row.rowNum == 0) continue

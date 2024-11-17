@@ -51,7 +51,6 @@ class ScannedControlItemsActivity : AppCompatActivity() {
 
         items = ItemsHolder.itemsList
         // Получение переданных данных
-//        items = intent.getParcelableArrayListExtra<Item>("itemsList") ?: listOf()
         actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
         itemsAdapter = ItemsControlAdapter(items)
