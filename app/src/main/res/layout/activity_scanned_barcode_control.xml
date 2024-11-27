@@ -59,7 +59,7 @@
         android:id="@+id/quantityLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Количество:"
+        android:text="Требуемое количество:"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
@@ -78,6 +78,29 @@
         app:layout_constraintStart_toEndOf="@id/quantityLabel"
         app:layout_constraintTop_toBottomOf="@id/barcodeTextView" />
 
+    <TextView
+        android:id="@+id/scannedQuantityLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Отсканировано при отборе:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/quantityLabel"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20dp" />
+
+    <TextView
+        android:id="@+id/scannedQuantityTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="63dp"
+        android:layout_marginTop="24dp"
+        android:text="10"
+        android:textSize="16sp"
+        app:layout_constraintStart_toEndOf="@id/quantityLabel"
+        app:layout_constraintTop_toBottomOf="@id/quantityTextView" />
+
     <EditText
         android:id="@+id/quantityEditText"
         android:layout_width="371dp"
@@ -87,7 +110,7 @@
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/quantityLabel"
+        app:layout_constraintTop_toBottomOf="@id/scannedQuantityLabel"
         android:layout_marginTop="50dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp" />

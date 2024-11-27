@@ -1,16 +1,13 @@
 package com.example.m3zebrascan.Inventory
 
 import DocumentSaver
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
-import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.m3zebrascan.*
@@ -142,39 +139,31 @@ class InventoryItemsActivity: AppCompatActivity() {
         val foundItem = items.find { it.code == scannedBarcode }
 
         // Функция для отображения диалогового окна
-        fun showQuantityDialog(item: InventoryItem?, isNewItem: Boolean) {
-            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_quantity_input, null)
-            val quantityInput = dialogView.findViewById<EditText>(R.id.quantity_input)
 
-            AlertDialog.Builder(this).apply {
+        fun showQuantityDialog(item: InventoryItem?, isNewItem: Boolean) {
+            val title = if (isNewItem) "Введите количество" else "Хотите изменить количество?"
+            val message = if (isNewItem) {
+                "Штрихкод: $scannedBarcode"
+            } else {
+                "Штрихкод: ${item?.code}\nТекущее количество: ${item?.quantity}\nВведите число для добавления."
+            }
+
+            DialogUtils.showQuantityInputDialog(
+                context = this,
+                title = title,
+                message = message,
+            ) { quantity ->
                 if (isNewItem) {
-                    setTitle("Введите количество")
-                    setMessage("Штрихкод: $scannedBarcode")
+                    val newItem = InventoryItem(code = scannedBarcode, quantity = quantity)
+                    items.add(newItem)
+                    itemsAdapter.notifyItemInserted(items.size - 1)
                 } else {
-                    setTitle("Хотите изменить количество?")
-                    setMessage("Штрихкод: ${item?.code}\nТекущее количество: ${item?.quantity}\nВведите число для добавления.")
+                    val newQuantity = (item?.quantity ?: 0) + quantity
+                    item?.quantity = newQuantity
+                    val position = items.indexOf(item)
+                    itemsAdapter.notifyItemChanged(position)
                 }
-                setView(dialogView)
-                setPositiveButton("Применить") { _, _ ->
-                    val quantity = quantityInput.text.toString().toIntOrNull() ?: 0
-                    if (isNewItem) {
-                        // Добавляем новый элемент
-                        val newItem = InventoryItem(code = scannedBarcode, quantity = quantity)
-                        items.add(newItem)
-                        itemsAdapter.notifyItemInserted(items.size - 1)
-                    } else {
-                        // Обновляем количество для существующего элемента
-                        val newQuantity = (item?.quantity ?: 0) + quantity
-                        item?.quantity = newQuantity
-                        val position = items.indexOf(item)
-                        itemsAdapter.notifyItemChanged(position)
-                    }
-                    toggleViews()
-                }
-                setNegativeButton("Отмена") { dialog, _ ->
-                    dialog.dismiss() // Закрыть диалог без изменений
-                }
-                show()
+                toggleViews()
             }
         }
 
@@ -186,6 +175,7 @@ class InventoryItemsActivity: AppCompatActivity() {
             showQuantityDialog(foundItem, isNewItem = false)
         }
     }
+
 
     private fun toggleViews() {
         binding.emptyListTextView.visibility = View.GONE

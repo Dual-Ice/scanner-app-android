@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
+import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import com.example.m3zebrascan.databinding.ActivityScannedBarcodeBinding
@@ -116,6 +118,17 @@ class ScannedBarcodeActivity : AppCompatActivity() {
         mManager.addListener(mListener)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.menu_scanned_barcode, menu)
+
+        val item = menu.findItem(R.id.action_add)
+        val icon = item.icon
+        icon?.setTint(getColor(R.color.white))
+        item.icon = icon
+        return true
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         event?.let {
             val keyCode = it.keyCode
@@ -140,6 +153,10 @@ class ScannedBarcodeActivity : AppCompatActivity() {
                 onBackPressed()
                 true
             }
+            R.id.action_add -> {
+                showAddQuantityDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -151,5 +168,16 @@ class ScannedBarcodeActivity : AppCompatActivity() {
     private fun goBack() {
         setResult(RESULT_CANCELED)
         finish()
+    }
+
+    private fun showAddQuantityDialog() {
+        DialogUtils.showQuantityInputDialog(
+            context = this,
+            title = "Добавить количество",
+            message = "Отсканировано $scannedQuantity единиц товара. Введите количество, которое хотите добавить к текущему:",
+        ) { additionalQuantity ->
+            scannedQuantity += additionalQuantity
+            binding.quantityEditText.setText(scannedQuantity.toString())
+        }
     }
 }
