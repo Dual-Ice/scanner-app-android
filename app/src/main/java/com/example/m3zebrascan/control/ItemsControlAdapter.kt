@@ -9,8 +9,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.m3zebrascan.Item
 import com.example.m3zebrascan.R
 
-class ItemsControlAdapter(private val items: List<Item>) :
-    RecyclerView.Adapter<ItemsControlAdapter.ItemViewHolder>() {
+class ItemsControlAdapter(
+    private val items: List<Item>,
+    private val onItemClicked: (Item) -> Unit
+) : RecyclerView.Adapter<ItemsControlAdapter.ItemViewHolder>() {
 
     class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val nameTextView: TextView = view.findViewById(R.id.itemNameTextView)
@@ -36,6 +38,10 @@ class ItemsControlAdapter(private val items: List<Item>) :
             holder.itemView.setBackgroundColor(Color.GREEN)
         } else {
             holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+        }
+
+        holder.itemView.setOnClickListener {
+            onItemClicked(item)
         }
     }
 

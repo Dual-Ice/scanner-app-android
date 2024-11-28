@@ -47,7 +47,9 @@ class ScannedItemsActivity : AppCompatActivity() {
         items = ItemsHolder.itemsList
         actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
-        itemsAdapter = ItemsAdapter(items)
+        itemsAdapter = ItemsAdapter(items) { item ->
+            handleScanResult(item.code)
+        }
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = itemsAdapter
 
