@@ -226,6 +226,7 @@ class ScannedItemsActivity : AppCompatActivity() {
                 return
             }
 
+            foundItem.updatedAt = System.currentTimeMillis()
             if (comment != null) {
                 foundItem.comment = comment
             }
@@ -233,11 +234,7 @@ class ScannedItemsActivity : AppCompatActivity() {
                 foundItem.scanned = quantity
             }
 
-            // Найдите индекс элемента и уведомьте адаптер об изменении
-            val index = getItemIndex(foundItem)
-            if (index != -1) {
-                itemsAdapter.notifyItemChanged(index)
-            }
+            itemsAdapter.updateItems(items)
         }
     }
 

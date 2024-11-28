@@ -233,6 +233,7 @@ class ScannedControlItemsActivity : AppCompatActivity() {
                 return
             }
 
+            foundItem.updatedAt = System.currentTimeMillis()
             if (quantity != null) {
                 foundItem.control = quantity
             }
@@ -241,11 +242,7 @@ class ScannedControlItemsActivity : AppCompatActivity() {
                 foundItem.comment = comment
             }
 
-            // Найдите индекс элемента и уведомьте адаптер об изменении
-            val index = getItemIndex(foundItem)
-            if (index != -1) {
-                itemsAdapter.notifyItemChanged(index)
-            }
+            itemsAdapter.updateItems(items)
         }
     }
 

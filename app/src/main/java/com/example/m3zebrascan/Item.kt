@@ -9,7 +9,8 @@ data class Item(
     val quantity: Int,
     var scanned: Int,
     var control: Int = 0,
-    var comment: String = ""
+    var comment: String = "",
+    var updatedAt: Long = 0
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
@@ -18,6 +19,7 @@ data class Item(
         parcel.readInt(),
         parcel.readInt(),
         parcel.readString() ?: "",
+        parcel.readLong()
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -27,6 +29,7 @@ data class Item(
         parcel.writeInt(scanned)
         parcel.writeInt(control)
         parcel.writeString(comment)
+        parcel.writeLong(updatedAt)
     }
 
     override fun describeContents(): Int {
