@@ -11,7 +11,7 @@ import com.example.m3zebrascan.Item
 import com.example.m3zebrascan.R
 
 class ItemsControlAdapter(
-    private val items: List<Item>,
+    private var items: List<Item>,
     private val onItemClicked: (Item) -> Unit
 ) : RecyclerView.Adapter<ItemsControlAdapter.ItemViewHolder>() {
 
@@ -51,6 +51,11 @@ class ItemsControlAdapter(
         holder.itemView.setOnClickListener {
             onItemClicked(item)
         }
+    }
+
+    fun updateItems(newItems: List<Item>) {
+        this.items = newItems
+        this.notifyDataSetChanged()
     }
 
     override fun getItemCount() = items.size

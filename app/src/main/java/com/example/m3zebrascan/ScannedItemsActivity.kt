@@ -5,9 +5,14 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.m3zebrascan.databinding.ActivityScannedItemsBinding
 import com.m3.sdk.scannerlib.Barcode
@@ -31,6 +36,10 @@ class ScannedItemsActivity : AppCompatActivity() {
 
     private var actionType: String? = null
 
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+    private val searchDelay: Long = 250
+
     private val CREATE_XLSX_FILE = 1
     private val REQUEST_WRITE_STORAGE = 112
 
@@ -46,16 +55,13 @@ class ScannedItemsActivity : AppCompatActivity() {
         // Получение переданных данных
         items = ItemsHolder.itemsList
         actionType = intent.getStringExtra("actionType")
-        // Инициализация RecyclerView
         itemsAdapter = ItemsAdapter(items) { item ->
             handleScanResult(item.code)
         }
+
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = itemsAdapter
-
-
         binding.cancelButton.setOnClickListener {
-            // Логика для отмены
             if (!hasScannedItems()) {
                 finish()
             }
@@ -68,9 +74,39 @@ class ScannedItemsActivity : AppCompatActivity() {
         }
         initializeScanner()
 
-        // Включаем кнопку "Назад" в ActionBar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = Actions.getActionName(actionType)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_scanned_items, menu)
+
+        val searchItem = menu.findItem(R.id.action_search)
+        val searchView = searchItem?.actionView as? SearchView
+
+        searchView?.queryHint = "Поиск по названию или штрих-коду"
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                filterItems(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+
+                searchRunnable = Runnable {
+                    filterItems(newText)
+                }
+                searchHandler.postDelayed(searchRunnable!!, searchDelay)
+                return true
+            }
+        })
+
+        val icon = searchItem.icon
+        icon?.setTint(getColor(R.color.white))
+        searchItem.icon = icon
+
+        return true
     }
 
     override fun onDestroy() {
@@ -214,6 +250,27 @@ class ScannedItemsActivity : AppCompatActivity() {
         val intent = Intent(this, ScannedBarcodeActivity::class.java)
         intent.putExtra("scannedItem", item)
         startActivityForResult(intent, REQUEST_QUANTITY)
+    }
+
+    private fun filterItems(query: String?) {
+        val filteredItems = if (query.isNullOrEmpty()) {
+            items
+        } else {
+            items.filter {
+                it.name.contains(query, ignoreCase = true) ||
+                it.code.contains(query, ignoreCase = true)
+            }
+        }
+
+        itemsAdapter.updateItems(filteredItems)
+
+        if (filteredItems.isEmpty()) {
+            binding.emptyListTextView.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.GONE
+        } else {
+            binding.emptyListTextView.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
+        }
     }
 
     private fun getItemIndex(item: Item): Int {

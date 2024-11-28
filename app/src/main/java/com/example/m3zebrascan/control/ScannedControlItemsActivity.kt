@@ -5,13 +5,19 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.m3zebrascan.Actions
 import com.example.m3zebrascan.Item
 import com.example.m3zebrascan.ItemsHolder
+import com.example.m3zebrascan.R
 import com.example.m3zebrascan.databinding.ActivityScannedItemsControlBinding
 import com.m3.sdk.scannerlib.Barcode
 import com.m3.sdk.scannerlib.BarcodeListener
@@ -34,6 +40,10 @@ class ScannedControlItemsActivity : AppCompatActivity() {
 
     private var actionType: String? = null
 
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+    private val searchDelay: Long = 250
+
     private val CREATE_XLSX_FILE = 1
     private val REQUEST_WRITE_STORAGE = 112
 
@@ -46,13 +56,9 @@ class ScannedControlItemsActivity : AppCompatActivity() {
         binding = ActivityScannedItemsControlBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
         // Получение переданных данных
-
         items = ItemsHolder.itemsList
-        // Получение переданных данных
         actionType = intent.getStringExtra("actionType")
-        // Инициализация RecyclerView
         itemsAdapter = ItemsControlAdapter(items){ item ->
             handleScanResult(item.code)
         }
@@ -61,7 +67,6 @@ class ScannedControlItemsActivity : AppCompatActivity() {
         binding.recyclerView.adapter = itemsAdapter
 
         binding.cancelButton.setOnClickListener {
-            // Логика для отмены
             if (!hasScannedItems()) {
                 finish()
             }
@@ -74,9 +79,39 @@ class ScannedControlItemsActivity : AppCompatActivity() {
         }
         initializeScanner()
 
-        // Включаем кнопку "Назад" в ActionBar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = Actions.getActionName(actionType)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_scanned_items, menu)
+
+        val searchItem = menu.findItem(R.id.action_search)
+        val searchView = searchItem?.actionView as? SearchView
+
+        searchView?.queryHint = "Поиск по названию или штрих-коду"
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                filterItems(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+
+                searchRunnable = Runnable {
+                    filterItems(newText)
+                }
+                searchHandler.postDelayed(searchRunnable!!, searchDelay)
+                return true
+            }
+        })
+
+        val icon = searchItem.icon
+        icon?.setTint(getColor(R.color.white))
+        searchItem.icon = icon
+
+        return true
     }
 
     override fun onDestroy() {
@@ -225,6 +260,26 @@ class ScannedControlItemsActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_QUANTITY)
     }
 
+    private fun filterItems(query: String?) {
+        val filteredItems = if (query.isNullOrEmpty()) {
+            items
+        } else {
+            items.filter {
+                it.name.contains(query, ignoreCase = true) ||
+                it.code.contains(query, ignoreCase = true)
+            }
+        }
+
+        itemsAdapter.updateItems(filteredItems)
+
+        if (filteredItems.isEmpty()) {
+            binding.emptyListTextView.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.GONE
+        } else {
+            binding.emptyListTextView.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
+        }
+    }
 
     private fun getItemIndex(item: Item): Int {
         return items.indexOfFirst { it.code == item.code }
