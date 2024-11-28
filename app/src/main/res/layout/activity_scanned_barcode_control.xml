@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/productNameLabel"
@@ -14,16 +15,13 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="40dp"/>
+        android:layout_marginTop="25dp"/>
 
     <TextView
         android:id="@+id/productNameTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
         android:text="Товар отсканирован"
         android:textSize="16sp"
         android:ellipsize="end"
@@ -41,7 +39,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/productNameTextView"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="20dp" />
 
     <TextView
@@ -64,7 +61,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/barcodeLabel"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="20dp" />
 
     <TextView
@@ -87,7 +83,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/quantityLabel"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="20dp" />
 
     <TextView
@@ -103,17 +98,44 @@
 
     <EditText
         android:id="@+id/quantityEditText"
-        android:layout_width="371dp"
-        android:layout_height="50dp"
-        android:hint="Введите количество"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Введите отсканированное количество"
         android:inputType="number"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scannedQuantityLabel"
-        android:layout_marginTop="50dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp" />
+        android:layout_marginTop="10dp" />
+
+    <TextView
+        android:id="@+id/commentLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Комментарий:"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/quantityEditText"
+        android:layout_marginTop="20dp" />
+
+    <EditText
+        android:id="@+id/commentEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Введите комментарий"
+        android:inputType="textMultiLine"
+        android:gravity="top|start"
+        android:lines="5"
+        android:scrollHorizontally="false"
+        android:scrollbars="vertical"
+        android:imeOptions="actionDone"
+        android:textSize="16sp"
+        android:padding="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/commentLabel"
+        android:layout_marginTop="10dp" />
 
     <CheckBox
         android:id="@+id/unlock"
@@ -122,8 +144,7 @@
         android:text="Разблокировать"
         android:layout_marginTop="10dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/quantityEditText"
-        android:layout_marginStart="16dp" />
+        app:layout_constraintTop_toBottomOf="@+id/commentEditText" />
 
     <!-- Кнопки ОК и Отмена -->
     <LinearLayout

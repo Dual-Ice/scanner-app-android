@@ -265,7 +265,7 @@ class ScannedControlItemsActivity : AppCompatActivity() {
                 val csvWriter = CSVWriter(OutputStreamWriter(outputStream))
 
                 // Записать заголовки
-                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Контроль")
+                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Контроль", "Комментарий")
                 csvWriter.writeNext(header)
 
                 // Записать данные
@@ -275,7 +275,8 @@ class ScannedControlItemsActivity : AppCompatActivity() {
                         item.code,
                         item.quantity.toString(),
                         item.scanned.toString(),
-                        item.control.toString()
+                        item.control.toString(),
+                        item.comment
                     )
                     csvWriter.writeNext(data)
                 }
@@ -303,7 +304,7 @@ class ScannedControlItemsActivity : AppCompatActivity() {
 
                 // Создаем строку заголовков
                 val headerRow = sheet.createRow(0)
-                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Контроль")
+                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Контроль", "Комментарий")
 
                 headers.forEachIndexed { index, header ->
                     val cell = headerRow.createCell(index)
@@ -319,6 +320,7 @@ class ScannedControlItemsActivity : AppCompatActivity() {
                     row.createCell(2).setCellValue(item.quantity.toDouble())
                     row.createCell(3).setCellValue(item.scanned.toDouble())
                     row.createCell(4).setCellValue(item.control.toDouble())
+                    row.createCell(5).setCellValue(item.comment)
                 }
 
                 // Сохраняем workbook в OutputStream

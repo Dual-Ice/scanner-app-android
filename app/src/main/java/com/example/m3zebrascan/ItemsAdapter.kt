@@ -1,10 +1,10 @@
 package com.example.m3zebrascan
 
 import android.graphics.Color
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
@@ -18,6 +18,7 @@ class ItemsAdapter(
         val codeTextView: TextView = view.findViewById(R.id.itemCodeTextView)
         val quantityTextView: TextView = view.findViewById(R.id.itemQuantityTextView)
         val scannedTextView: TextView = view.findViewById(R.id.itemScannedTextView)
+        val commentIcon: ImageView = view.findViewById(R.id.commentIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
@@ -37,6 +38,12 @@ class ItemsAdapter(
             holder.itemView.setBackgroundColor(Color.GREEN)
         } else {
             holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+        }
+
+        if (item.comment.isNotBlank()) {
+            holder.commentIcon.visibility = View.VISIBLE
+        } else {
+            holder.commentIcon.visibility = View.GONE
         }
 
         holder.itemView.setOnClickListener {

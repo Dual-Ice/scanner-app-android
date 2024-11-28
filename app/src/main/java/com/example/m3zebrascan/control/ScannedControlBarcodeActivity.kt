@@ -21,6 +21,7 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
     private lateinit var mListener: BarcodeListener
     private lateinit var scannedItem: Item
     private var scannedQuantity: Int = 0
+    private var scannedComment: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +32,8 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
         binding = ActivityScannedBarcodeControlBinding.inflate(layoutInflater)
         setContentView(binding.root)
         scannedItem = intent.getParcelableExtra<Item>("scannedItem")!!
+        scannedQuantity = scannedItem.control ?: 0
+        scannedComment = scannedItem.comment ?: ""
 
         binding.okButton.isEnabled = false
         binding.cancelButton.isEnabled = false
@@ -39,9 +42,20 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
         binding.barcodeTextView.text = scannedItem.code
         binding.quantityTextView.text = scannedItem.quantity.toString()
         binding.scannedQuantityTextView.text = scannedItem.scanned.toString()
-        scannedQuantity = scannedItem.control ?: 0
         binding.quantityEditText.setText(scannedQuantity.toString() ?: "")
+        binding.commentEditText.setText(scannedComment)
 
+        binding.commentEditText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                scannedComment = s.toString()
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
         binding.quantityEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
@@ -67,19 +81,13 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
 
             scannedItem.let {
                 if (scannedQuantity == it.control) {
-                    setResult(RESULT_OK, Intent().apply {
-                        putExtra("quantity", scannedQuantity)
-                    })
-                    finish()
+                    handleSuccess()
                 }
 
                 DialogUtils.showQuantityMismatchDialog(
                     context = this,
                     onPositiveClick = {
-                        setResult(RESULT_OK, Intent().apply {
-                            putExtra("quantity", scannedQuantity)
-                        })
-                        finish()
+                        handleSuccess()
                     }
                 )
             }
@@ -167,6 +175,14 @@ class ScannedControlBarcodeActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         goBack()
+    }
+
+    private fun handleSuccess() {
+        setResult(RESULT_OK, Intent().apply {
+            putExtra("quantity", scannedQuantity)
+            putExtra("comment", scannedComment)
+        })
+        finish()
     }
 
     private fun goBack() {
