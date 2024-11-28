@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Отсканированные товары"
+        android:text="Осканированные товары"
         android:textSize="24sp"
         android:gravity="center"
         android:padding="16dp" />

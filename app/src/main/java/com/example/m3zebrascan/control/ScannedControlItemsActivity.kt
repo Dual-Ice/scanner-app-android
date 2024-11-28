@@ -1,4 +1,4 @@
-package com.example.m3zebrascan
+package com.example.m3zebrascan.control
 
 import android.app.AlertDialog
 import android.content.Intent
@@ -9,7 +9,10 @@ import android.util.Log
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.m3zebrascan.databinding.ActivityScannedItemsBinding
+import com.example.m3zebrascan.Actions
+import com.example.m3zebrascan.Item
+import com.example.m3zebrascan.ItemsHolder
+import com.example.m3zebrascan.databinding.ActivityScannedItemsControlBinding
 import com.m3.sdk.scannerlib.Barcode
 import com.m3.sdk.scannerlib.BarcodeListener
 import com.m3.sdk.scannerlib.BarcodeManager
@@ -20,10 +23,10 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
 
-class ScannedItemsActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityScannedItemsBinding
-    private lateinit var itemsAdapter: ItemsAdapter
-    private var items: List<Item> = listOf()
+class ScannedControlItemsActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityScannedItemsControlBinding
+    private lateinit var itemsAdapter: ItemsControlAdapter
+    private lateinit var items: List<Item>
     private lateinit var scannedCode: String
     private lateinit var mBarcode: Barcode
     private var mManager: BarcodeManager? = null
@@ -40,17 +43,20 @@ class ScannedItemsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityScannedItemsBinding.inflate(layoutInflater)
+        binding = ActivityScannedItemsControlBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+
         // Получение переданных данных
+
         items = ItemsHolder.itemsList
+        // Получение переданных данных
         actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
-        itemsAdapter = ItemsAdapter(items)
+        itemsAdapter = ItemsControlAdapter(items)
+
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = itemsAdapter
-
 
         binding.cancelButton.setOnClickListener {
             // Логика для отмены
@@ -158,18 +164,20 @@ class ScannedItemsActivity : AppCompatActivity() {
         }
 
         scannedCode = foundItem.code
-        if (foundItem.scanned == 0) {
+        if (foundItem.control == 0) {
+            // Переход на экран с отображением отсканированного штрихкода
+            val intent = Intent(this, ScannedControlBarcodeActivity::class.java)
+            intent.putExtra("scannedItem", foundItem)
+
             startQuantityActivity(foundItem)
             return
         }
-        if (foundItem.scanned != foundItem.quantity) {
-            // Показываем сообщение с двумя кнопками
+        if (foundItem.control != foundItem.scanned) {
             showQuantityMismatchDialog(foundItem)
             return
         }
 
-        if (foundItem.scanned == foundItem.quantity) {
-            // Показываем сообщение с двумя кнопками
+        if (foundItem.control == foundItem.scanned) {
             showQuantityEqualDialog(foundItem)
             return
         }
@@ -184,7 +192,7 @@ class ScannedItemsActivity : AppCompatActivity() {
             val foundItem = items.find { it.code == scannedCode }
             if (foundItem != null && quantity != null) {
                 // Обновляем количество товара в элементе списка
-                foundItem.scanned = quantity
+                foundItem.control = quantity
 
                 // Найдите индекс элемента и уведомьте адаптер об изменении
                 val index = getItemIndex(foundItem)
@@ -202,21 +210,33 @@ class ScannedItemsActivity : AppCompatActivity() {
         mManager?.dismiss()
         mManager = null
 
-        val intent = Intent(this, ScannedBarcodeActivity::class.java)
+        val intent = Intent(this, ScannedControlBarcodeActivity::class.java)
         intent.putExtra("scannedItem", item)
         startActivityForResult(intent, REQUEST_QUANTITY)
     }
+
 
     private fun getItemIndex(item: Item): Int {
         return items.indexOfFirst { it.code == item.code }
     }
 
     private fun checkStoragePermissions() {
+//        val permission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//
+//        if (permission != PackageManager.PERMISSION_GRANTED) {
+//            ActivityCompat.requestPermissions(
+//                this,
+//                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+//                REQUEST_WRITE_STORAGE
+//            )
+//        }
         val itemsNotFullyScanned = items.any { it.scanned <= 0 }
 
         if (itemsNotFullyScanned) {
+            // Показываем диалог, если не все товары отсканированы
             showIncompleteScanDialog()
         } else {
+            // Если все товары отсканированы, сохраняем данные
             createXlsxFile()
         }
     }
@@ -243,12 +263,18 @@ class ScannedItemsActivity : AppCompatActivity() {
                 val csvWriter = CSVWriter(OutputStreamWriter(outputStream))
 
                 // Записать заголовки
-                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
+                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Контроль")
                 csvWriter.writeNext(header)
 
                 // Записать данные
                 for (item in items) {
-                    val data = arrayOf(item.name, item.code, item.quantity.toString(), item.scanned.toString())
+                    val data = arrayOf(
+                        item.name,
+                        item.code,
+                        item.quantity.toString(),
+                        item.scanned.toString(),
+                        item.control.toString()
+                    )
                     csvWriter.writeNext(data)
                 }
 
@@ -275,7 +301,7 @@ class ScannedItemsActivity : AppCompatActivity() {
 
                 // Создаем строку заголовков
                 val headerRow = sheet.createRow(0)
-                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
+                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Контроль")
 
                 headers.forEachIndexed { index, header ->
                     val cell = headerRow.createCell(index)
@@ -290,6 +316,7 @@ class ScannedItemsActivity : AppCompatActivity() {
                     row.createCell(1).setCellValue(item.code)
                     row.createCell(2).setCellValue(item.quantity.toDouble())
                     row.createCell(3).setCellValue(item.scanned.toDouble())
+                    row.createCell(4).setCellValue(item.control.toDouble())
                 }
 
                 // Сохраняем workbook в OutputStream
@@ -317,7 +344,7 @@ class ScannedItemsActivity : AppCompatActivity() {
     private fun showQuantityMismatchDialog(item: Item) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Несоответствие количества")
-            .setMessage("Отсканировано ${item.scanned}, требуется отсканировать ${item.quantity}")
+            .setMessage("Отсканировано ${item.control}, требуется отсканировать ${item.scanned}")
             .setPositiveButton("Принять") { dialog, _ ->
                 startQuantityActivity(item)
                 dialog.dismiss()
@@ -332,7 +359,7 @@ class ScannedItemsActivity : AppCompatActivity() {
     private fun showQuantityEqualDialog(item: Item) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Предупреждение")
-            .setMessage("Отсканировано ${item.scanned} из ${item.quantity}, изменить количество?")
+            .setMessage("Отсканировано ${item.control} из ${item.scanned}, изменить количество?")
             .setPositiveButton("Да") { dialog, _ ->
                 startQuantityActivity(item)
                 dialog.dismiss()
@@ -349,9 +376,11 @@ class ScannedItemsActivity : AppCompatActivity() {
         builder.setTitle("Предупреждение")
             .setMessage("Отсканирован не весь товар")
             .setPositiveButton("Сохранить") { _, _ ->
+                // Сохраняем данные со всеми товарами
                 createXlsxFile()
             }
             .setNegativeButton("Продолжить сканирование") { dialog, _ ->
+                // Закрываем диалог и остаемся на текущем экране
                 dialog.dismiss()
             }
             .create()

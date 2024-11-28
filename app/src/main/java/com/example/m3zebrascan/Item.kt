@@ -3,10 +3,17 @@ package com.example.m3zebrascan
 import android.os.Parcel
 import android.os.Parcelable
 
-data class Item(val name: String, val code: String, val quantity: Int, var scanned: Int) : Parcelable {
+data class Item(
+    val name: String,
+    val code: String,
+    val quantity: Int,
+    var scanned: Int,
+    var control: Int = 0
+) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readString() ?: "",
+        parcel.readInt(),
         parcel.readInt(),
         parcel.readInt()
     )
@@ -16,6 +23,7 @@ data class Item(val name: String, val code: String, val quantity: Int, var scann
         parcel.writeString(code)
         parcel.writeInt(quantity)
         parcel.writeInt(scanned)
+        parcel.writeInt(control)
     }
 
     override fun describeContents(): Int {

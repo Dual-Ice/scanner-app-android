@@ -1,6 +1,6 @@
 package com.example.m3zebrascan.Inventory
 
-import android.app.AlertDialog
+import DocumentSaver
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -15,13 +15,7 @@ import com.example.m3zebrascan.databinding.ActivityInventoryItemsBinding
 import com.m3.sdk.scannerlib.Barcode
 import com.m3.sdk.scannerlib.BarcodeListener
 import com.m3.sdk.scannerlib.BarcodeManager
-import org.apache.poi.ss.usermodel.CellStyle
-import org.apache.poi.ss.usermodel.IndexedColors
-import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
 
 class InventoryItemsActivity: AppCompatActivity() {
     private lateinit var binding: ActivityInventoryItemsBinding
@@ -41,8 +35,6 @@ class InventoryItemsActivity: AppCompatActivity() {
         binding = ActivityInventoryItemsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
-        // Получение переданных данных
         actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
         itemsAdapter = InventoryItemsAdapter(items)
@@ -83,7 +75,7 @@ class InventoryItemsActivity: AppCompatActivity() {
                     if (uri != null) {
                         saveItemsToXlsx(uri)
                     } else {
-                        showErrorDialog("Не удалось создать файл.")
+                        DialogUtils.showErrorDialog(this, "Не удалось создать файл.")
                     }
                 }
             }
@@ -145,23 +137,45 @@ class InventoryItemsActivity: AppCompatActivity() {
     private fun handleScanResult(scannedBarcode: String) {
         // Проверка наличия отсканированного штрихкода в списке items
         val foundItem = items.find { it.code == scannedBarcode }
-        if (foundItem == null) {
-            val newItem = InventoryItem(code = scannedBarcode, quantity = 1)
-            items.add(newItem)
 
-            // Уведомляем адаптер о том, что элемент был добавлен
-            itemsAdapter.notifyItemInserted(items.size - 1)
-            if (items.size > 0) {
-                toggleViews()
+        // Функция для отображения диалогового окна
+
+        fun showQuantityDialog(item: InventoryItem?, isNewItem: Boolean) {
+            val title = if (isNewItem) "Введите количество" else "Хотите изменить количество?"
+            val message = if (isNewItem) {
+                "Штрихкод: $scannedBarcode"
+            } else {
+                "Штрихкод: ${item?.code}\nТекущее количество: ${item?.quantity}\nВведите число для добавления."
             }
 
-            return
+            DialogUtils.showQuantityInputDialog(
+                context = this,
+                title = title,
+                message = message,
+            ) { quantity ->
+                if (isNewItem) {
+                    val newItem = InventoryItem(code = scannedBarcode, quantity = quantity)
+                    items.add(newItem)
+                    itemsAdapter.notifyItemInserted(items.size - 1)
+                } else {
+                    val newQuantity = (item?.quantity ?: 0) + quantity
+                    item?.quantity = newQuantity
+                    val position = items.indexOf(item)
+                    itemsAdapter.notifyItemChanged(position)
+                }
+                toggleViews()
+            }
         }
 
-        foundItem.quantity += 1
-        val position = items.indexOf(foundItem)
-        itemsAdapter.notifyItemChanged(position)
+        if (foundItem == null) {
+            // Если элемент не найден, показываем диалог для нового элемента
+            showQuantityDialog(null, isNewItem = true)
+        } else {
+            // Если элемент найден, показываем диалог для обновления количества
+            showQuantityDialog(foundItem, isNewItem = false)
+        }
     }
+
 
     private fun toggleViews() {
         binding.emptyListTextView.visibility = View.GONE
@@ -176,7 +190,7 @@ class InventoryItemsActivity: AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 createXlsxFile()
             } else {
-                showErrorDialog("Permission denied to write to external storage.")
+                DialogUtils.showErrorDialog(this, "Permission denied to write to external storage.")
             }
         }
     }
@@ -186,47 +200,19 @@ class InventoryItemsActivity: AppCompatActivity() {
     }
 
     private fun saveItemsToXlsx(uri: Uri) {
+        val documentSaver = DocumentSaver(this)
+        documentSaver.saveInventory(uri, items.toList())
         try {
-            contentResolver.openOutputStream(uri)?.use { outputStream ->
-                val workbook = XSSFWorkbook() // Создаем новый XLSX файл
-                val sheet = workbook.createSheet("Лист 1") // Создаем лист с именем "Items"
-
-                // Создаем стиль для заголовков
-                val headerCellStyle = workbook.createCellStyle().apply {
-                    fillForegroundColor = IndexedColors.GREY_25_PERCENT.index
-                    fillPattern = CellStyle.SOLID_FOREGROUND
-                }
-
-                // Создаем строку заголовков
-                val headerRow = sheet.createRow(0)
-                val headers = listOf("Штрих-код", "Количество")
-
-                headers.forEachIndexed { index, header ->
-                    val cell = headerRow.createCell(index)
-                    cell.setCellValue(header)
-                    cell.cellStyle = headerCellStyle
-                }
-
-                // Заполняем данные
-                items.forEachIndexed { index, item ->
-                    val row: Row = sheet.createRow(index + 1)
-                    row.createCell(1).setCellValue(item.code)
-                    row.createCell(2).setCellValue(item.quantity.toDouble())
-                }
-
-                // Сохраняем workbook в OutputStream
-                workbook.write(outputStream)
-                workbook.close() // Закрываем workbook для освобождения ресурсов
-
-                showSuccessDialog("Данные успешно сохранены")
-            }
-        } catch (e: IOException) {
-            showErrorDialog("Ошибка при сохранении файла: ${e.message}")
+            documentSaver.saveInventory(uri, items) // Исключение из saveItemsToXlsx "поднимется" сюда
+            DialogUtils.showSuccessDialog(this, "Данные успешно сохранены")
+        } catch(e: IOException) {
+            DialogUtils.showErrorDialog(this, "Ошибка при сохранении файла: ${e.message}")
         }
+
     }
 
     private fun createXlsxFile() {
-        val fileTitle =  "${Actions.getActionName(actionType)}-${getCurrentDate()}.xlsx"
+        val fileTitle =  "${Actions.getActionName(actionType)}-${DateUtils.getCurrentDate()}.xlsx"
 
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -236,47 +222,13 @@ class InventoryItemsActivity: AppCompatActivity() {
         startActivityForResult(intent, CREATE_XLSX_FILE)
     }
 
-    private fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("dd-MM-yyyy_HH-mm-ss", Locale.getDefault())
-        return dateFormat.format(Date())
-    }
-
-    private fun showSuccessDialog(message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Успех")
-            .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-    private fun showErrorDialog(message: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Сообщение")
-            .setMessage(message)
-            .setPositiveButton("OK") { dialog, _ ->
-                dialog.dismiss()
-            }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
     private fun showHasScannedItemsCancelDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Предупреждение")
-            .setMessage("Документ не будет сохранен, продолжить ?")
-            .setPositiveButton("Да") { _, _ ->
-                // Сохраняем данные со всеми товарами
+        DialogUtils.showHasScannedItemsCancelDialog(
+            context = this,
+            onPositiveClick = {
                 finish()
             }
-            .setNegativeButton("Нет") { dialog, _ ->
-                // Закрываем диалог и остаемся на текущем экране
-                dialog.dismiss()
-            }
-            .create()
-            .show()
+        )
     }
 
 }

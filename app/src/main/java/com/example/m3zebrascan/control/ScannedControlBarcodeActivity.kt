@@ -1,4 +1,4 @@
-package com.example.m3zebrascan
+package com.example.m3zebrascan.control
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,12 +9,14 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import com.example.m3zebrascan.databinding.ActivityScannedBarcodeBinding
+import com.example.m3zebrascan.Item
+import com.example.m3zebrascan.R
+import com.example.m3zebrascan.databinding.ActivityScannedBarcodeControlBinding
 import com.m3.sdk.scannerlib.BarcodeListener
 import com.m3.sdk.scannerlib.BarcodeManager
 
-class ScannedBarcodeActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityScannedBarcodeBinding
+class ScannedControlBarcodeActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityScannedBarcodeControlBinding
     private lateinit var mManager: BarcodeManager
     private lateinit var mListener: BarcodeListener
     private lateinit var scannedItem: Item
@@ -26,7 +28,7 @@ class ScannedBarcodeActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Работа с товаром"
 
-        binding = ActivityScannedBarcodeBinding.inflate(layoutInflater)
+        binding = ActivityScannedBarcodeControlBinding.inflate(layoutInflater)
         setContentView(binding.root)
         scannedItem = intent.getParcelableExtra<Item>("scannedItem")!!
 
@@ -36,7 +38,8 @@ class ScannedBarcodeActivity : AppCompatActivity() {
         binding.productNameTextView.text = scannedItem.name
         binding.barcodeTextView.text = scannedItem.code
         binding.quantityTextView.text = scannedItem.quantity.toString()
-        scannedQuantity = scannedItem.scanned ?: 0
+        binding.scannedQuantityTextView.text = scannedItem.scanned.toString()
+        scannedQuantity = scannedItem.control ?: 0
         binding.quantityEditText.setText(scannedQuantity.toString() ?: "")
 
         binding.quantityEditText.addTextChangedListener(object : TextWatcher {
@@ -63,7 +66,7 @@ class ScannedBarcodeActivity : AppCompatActivity() {
             }
 
             scannedItem.let {
-                if (scannedQuantity == it.quantity) {
+                if (scannedQuantity == it.control) {
                     setResult(RESULT_OK, Intent().apply {
                         putExtra("quantity", scannedQuantity)
                     })
@@ -80,6 +83,7 @@ class ScannedBarcodeActivity : AppCompatActivity() {
                     }
                 )
             }
+
         }
 
         binding.unlock.setOnCheckedChangeListener { _, isChecked ->
@@ -93,14 +97,14 @@ class ScannedBarcodeActivity : AppCompatActivity() {
             override fun onBarcode(strBarcode: String?) {
                 if (strBarcode == null) {
                     DialogUtils.showErrorDialog(
-                        this@ScannedBarcodeActivity,
+                        this@ScannedControlBarcodeActivity,
                         "Некорректный штрихкод, повторите сканирование."
                     )
                     return
                 }
                 if (strBarcode != scannedItem.code) {
                     DialogUtils.showErrorDialog(
-                        this@ScannedBarcodeActivity,
+                        this@ScannedControlBarcodeActivity,
                         "Отсканирован штрихкод не совпадающий с обрабатываемым товаром."
                     )
                     return
