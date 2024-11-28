@@ -181,20 +181,27 @@ class ScannedItemsActivity : AppCompatActivity() {
         mManager = BarcodeManager(this)
         makeListener()
         if (resultCode == RESULT_OK) {
-            val quantity = data?.getIntExtra("quantity", 0)
-            // Выводим полученное количество в консоль
             val foundItem = items.find { it.code == scannedCode }
-            if (foundItem != null && quantity != null) {
-                // Обновляем количество товара в элементе списка
-                foundItem.scanned = quantity
-
-                // Найдите индекс элемента и уведомьте адаптер об изменении
-                val index = getItemIndex(foundItem)
-                if (index != -1) {
-                    itemsAdapter.notifyItemChanged(index)
-                }
-            }
+            val quantity = data?.getIntExtra("quantity", 0)
+            val comment = data?.getStringExtra("comment")
             scannedCode = ""
+
+            if (foundItem == null) {
+                return
+            }
+
+            if (comment != null) {
+                foundItem.comment = comment
+            }
+            if (quantity != null) {
+                foundItem.scanned = quantity
+            }
+
+            // Найдите индекс элемента и уведомьте адаптер об изменении
+            val index = getItemIndex(foundItem)
+            if (index != -1) {
+                itemsAdapter.notifyItemChanged(index)
+            }
         }
     }
 
@@ -245,12 +252,12 @@ class ScannedItemsActivity : AppCompatActivity() {
                 val csvWriter = CSVWriter(OutputStreamWriter(outputStream))
 
                 // Записать заголовки
-                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
+                val header = arrayOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Комментарий")
                 csvWriter.writeNext(header)
 
                 // Записать данные
                 for (item in items) {
-                    val data = arrayOf(item.name, item.code, item.quantity.toString(), item.scanned.toString())
+                    val data = arrayOf(item.name, item.code, item.quantity.toString(), item.scanned.toString(), item.comment)
                     csvWriter.writeNext(data)
                 }
 
@@ -277,7 +284,7 @@ class ScannedItemsActivity : AppCompatActivity() {
 
                 // Создаем строку заголовков
                 val headerRow = sheet.createRow(0)
-                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано")
+                val headers = listOf("Номенклатура", "Штрих-код", "Кол-во", "Остканировано", "Комментарий")
 
                 headers.forEachIndexed { index, header ->
                     val cell = headerRow.createCell(index)
@@ -292,6 +299,7 @@ class ScannedItemsActivity : AppCompatActivity() {
                     row.createCell(1).setCellValue(item.code)
                     row.createCell(2).setCellValue(item.quantity.toDouble())
                     row.createCell(3).setCellValue(item.scanned.toDouble())
+                    row.createCell(4).setCellValue(item.comment)
                 }
 
                 // Сохраняем workbook в OutputStream

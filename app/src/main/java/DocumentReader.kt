@@ -1,4 +1,3 @@
-import android.util.Log
 import com.example.m3zebrascan.Item
 import com.opencsv.CSVReader
 import org.apache.poi.ss.usermodel.DataFormatter
@@ -23,6 +22,7 @@ class DocumentReader {
                 val code = line!![1]
                 val quantity = line!![2]
                 val scanned = line!![3]
+                val comment = line!![4]
 
                 if (name.isBlank()) {
                     throw IllegalArgumentException("В строке $lineNumber отсутствует название")
@@ -35,7 +35,7 @@ class DocumentReader {
                 }
 
                 lineNumber++
-                val item = Item(name, code, quantity.toInt(), scanned.toInt(), 0)
+                val item = Item(name, code, quantity.toInt(), scanned.toInt(), 0, comment)
                 items.add(item)
             }
         }
@@ -58,6 +58,7 @@ class DocumentReader {
             val code = dataFormatter.formatCellValue(row.getCell(1))
             val quantityString = dataFormatter.formatCellValue(row.getCell(2))
             val scannedString = dataFormatter.formatCellValue(row.getCell(3))
+            val comment = dataFormatter.formatCellValue(row.getCell(4))
 
             if (name.isBlank()) {
                 throw IllegalArgumentException("В строке ${row.rowNum + 1} отсутствует название")
@@ -71,7 +72,7 @@ class DocumentReader {
 
             val quantity = quantityString.toIntOrNull() ?: throw IllegalArgumentException("В строке ${row.rowNum + 1} количество должно быть числом")
             val scanned = scannedString.toIntOrNull() ?: 0
-            val item = Item(name, code, quantity, scanned, 0)
+            val item = Item(name, code, quantity, scanned, 0, comment)
             items.add(item)
         }
 
