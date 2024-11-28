@@ -8,8 +8,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class ItemsAdapter(private val items: List<Item>) :
-    RecyclerView.Adapter<ItemsAdapter.ItemViewHolder>() {
+class ItemsAdapter(
+    private val items: List<Item>,
+    private val onItemClicked: (Item) -> Unit
+) : RecyclerView.Adapter<ItemsAdapter.ItemViewHolder>() {
 
     class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val nameTextView: TextView = view.findViewById(R.id.itemNameTextView)
@@ -35,6 +37,10 @@ class ItemsAdapter(private val items: List<Item>) :
             holder.itemView.setBackgroundColor(Color.GREEN)
         } else {
             holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+        }
+
+        holder.itemView.setOnClickListener {
+            onItemClicked(item)
         }
     }
 

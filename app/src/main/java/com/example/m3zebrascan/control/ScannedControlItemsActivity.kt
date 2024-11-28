@@ -53,7 +53,9 @@ class ScannedControlItemsActivity : AppCompatActivity() {
         // Получение переданных данных
         actionType = intent.getStringExtra("actionType")
         // Инициализация RecyclerView
-        itemsAdapter = ItemsControlAdapter(items)
+        itemsAdapter = ItemsControlAdapter(items){ item ->
+            handleScanResult(item.code)
+        }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = itemsAdapter
