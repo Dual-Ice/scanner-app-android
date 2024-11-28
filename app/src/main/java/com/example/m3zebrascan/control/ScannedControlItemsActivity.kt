@@ -189,20 +189,28 @@ class ScannedControlItemsActivity : AppCompatActivity() {
         mManager = BarcodeManager(this)
         makeListener()
         if (resultCode == RESULT_OK) {
-            val quantity = data?.getIntExtra("quantity", 0)
-            // Выводим полученное количество в консоль
             val foundItem = items.find { it.code == scannedCode }
-            if (foundItem != null && quantity != null) {
-                // Обновляем количество товара в элементе списка
-                foundItem.control = quantity
-
-                // Найдите индекс элемента и уведомьте адаптер об изменении
-                val index = getItemIndex(foundItem)
-                if (index != -1) {
-                    itemsAdapter.notifyItemChanged(index)
-                }
-            }
+            val quantity = data?.getIntExtra("quantity", 0)
+            val comment = data?.getStringExtra("comment")
             scannedCode = ""
+
+            if (foundItem == null) {
+                return
+            }
+
+            if (quantity != null) {
+                foundItem.control = quantity
+            }
+
+            if (comment != null) {
+                foundItem.comment = comment
+            }
+
+            // Найдите индекс элемента и уведомьте адаптер об изменении
+            val index = getItemIndex(foundItem)
+            if (index != -1) {
+                itemsAdapter.notifyItemChanged(index)
+            }
         }
     }
 
