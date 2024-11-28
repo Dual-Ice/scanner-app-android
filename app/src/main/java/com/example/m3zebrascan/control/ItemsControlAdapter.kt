@@ -54,7 +54,7 @@ class ItemsControlAdapter(
     }
 
     fun updateItems(newItems: List<Item>) {
-        this.items = newItems
+        this.items = newItems.sortedByDescending { it.updatedAt }
         this.notifyDataSetChanged()
     }
 
